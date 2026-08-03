@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
+  <meta name="theme-color" content="#05264f">
+  <title>KFMH Mobile PDF Viewer</title>
+  <style>
+    :root{--navy:#05264f;--navy2:#0a356b;--gold:#d4a02b;--bg:#cfd6df;--danger:#a12727}
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,"Helvetica Neue",sans-serif;background:var(--bg);color:#fff}
+    body{display:grid;grid-template-rows:auto 1fr auto}
+    .topbar,.bottombar{background:linear-gradient(135deg,var(--navy),var(--navy2));display:flex;align-items:center;gap:8px;padding:8px 10px;z-index:10;box-shadow:0 2px 12px rgba(0,0,0,.24)}
+    .topbar{padding-top:calc(8px + env(safe-area-inset-top))}
+    .bottombar{padding-bottom:calc(8px + env(safe-area-inset-bottom));justify-content:center;flex-wrap:wrap}
+    .title{min-width:0;flex:1;text-align:center;font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+    button,a.control{appearance:none;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.1);color:#fff;border-radius:10px;min-width:42px;height:42px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:800;font-size:15px;cursor:pointer;touch-action:manipulation}
+    button:active,a.control:active{background:rgba(255,255,255,.22)}
+    button:disabled{opacity:.38;cursor:not-allowed}
+    .gold{background:var(--gold);border-color:var(--gold);color:#17243a}
+    .viewer{position:relative;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:radial-gradient(circle at top,#e8edf3,#cbd3dc 70%);padding:18px}
+    .canvas-wrap{position:relative;margin:0 auto;width:max-content;min-width:100%;display:flex;justify-content:center;align-items:flex-start}
+    canvas{display:block;background:#fff;box-shadow:0 8px 28px rgba(0,0,0,.28);border-radius:3px}
+    .loading,.error{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:28px;z-index:5;background:rgba(224,230,238,.94);color:var(--navy);font-size:18px;font-weight:800;line-height:1.7}
+    .error{display:none;color:var(--danger);flex-direction:column;gap:14px}
+    .error a{color:var(--navy);font-weight:800}
+    .spinner{width:46px;height:46px;border-radius:50%;border:5px solid #b7c2d0;border-top-color:var(--navy);animation:spin .8s linear infinite;margin:0 auto 14px}@keyframes spin{to{transform:rotate(360deg)}}
+    .pagebox{display:flex;align-items:center;gap:6px;color:#fff;font-weight:700}
+    .pagebox input{width:58px;height:38px;border:0;border-radius:8px;text-align:center;font-size:16px;font-weight:800;color:var(--navy)}
+    .zoom-label{min-width:58px;text-align:center;font-size:14px;font-weight:800;color:#f5cf69}
+    .progress{position:absolute;top:0;left:0;height:3px;background:var(--gold);width:0;transition:width .2s;z-index:20}
+    @media(max-width:660px){.viewer{padding:10px}.topbar{gap:5px;padding-inline:6px}.topbar .desktop-label{display:none}.title{font-size:13px}.bottombar{gap:6px;padding-inline:6px}button,a.control{height:40px;min-width:40px;padding:0 10px;font-size:14px}.pagebox input{width:50px}.zoom-label{min-width:52px}}
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress"></div>
+  <header class="topbar">
+    <a class="control" href="index.html" aria-label="Home">⌂ <span class="desktop-label" id="homeLabel">الرئيسية</span></a>
+    <div class="title" id="docTitle">نظام توزيع الطاقة الكهربائية</div>
+    <a class="control gold" id="printLink" href="#" target="_blank" rel="noopener">PDF</a>
+  </header>
+
+  <main class="viewer" id="viewer">
+    <div class="canvas-wrap" id="canvasWrap"><canvas id="pdfCanvas"></canvas></div>
+    <div class="loading" id="loading"><div><div class="spinner"></div><span id="loadingText">جاري تحميل المستند...</span></div></div>
+    <div class="error" id="error"><div id="errorText">تعذّر تشغيل العرض المكبّر.</div><a id="fallbackLink" href="#" target="_blank" rel="noopener">فتح ملف PDF مباشرة</a></div>
+  </main>
+
+  <footer class="bottombar">
+    <button id="prevBtn" aria-label="Previous page">◀</button>
+    <div class="pagebox"><input id="pageInput" type="number" min="1" value="1" inputmode="numeric"><span>/</span><span id="pageCount">-</span></div>
+    <button id="nextBtn" aria-label="Next page">▶</button>
+    <button id="zoomOut" aria-label="Zoom out">−</button>
+    <div class="zoom-label" id="zoomLabel">170%</div>
+    <button id="zoomIn" aria-label="Zoom in">＋</button>
+    <button id="fitBtn" aria-label="Fit width">↔</button>
+  </footer>
+
+  <script type="module">
+    const params = new URLSearchParams(location.search);
+    const docKey = params.get('doc') === 'en' ? 'en' : 'ar-en';
+    const englishUI = params.get('ui') === 'en';
+    const docs = {
+      'ar-en': {url:'pdf/KFMH_Electrical_System_AR_EN.pdf', title:'عربي - English | KFMH Electrical System'},
+      'en': {url:'pdf/KFMH_Electrical_System_EN.pdf', title:'English | KFMH Electrical System'}
+    };
+    const selected = docs[docKey];
+    document.documentElement.lang = englishUI ? 'en' : 'ar';
+    document.documentElement.dir = englishUI ? 'ltr' : 'rtl';
+    document.getElementById('docTitle').textContent = selected.title;
+    document.getElementById('printLink').href = selected.url;
+    document.getElementById('fallbackLink').href = selected.url;
+    if (englishUI) {
+      document.getElementById('homeLabel').textContent = 'Home';
+      document.getElementById('loadingText').textContent = 'Loading document...';
+      document.getElementById('errorText').textContent = 'The enlarged viewer could not start.';
+      document.getElementById('fallbackLink').textContent = 'Open the PDF directly';
+    }
+
+    const canvas = document.getElementById('pdfCanvas');
+    const ctx = canvas.getContext('2d', {alpha:false});
+    const viewer = document.getElementById('viewer');
+    const loading = document.getElementById('loading');
+    const errorBox = document.getElementById('error');
+    const progress = document.getElementById('progress');
+    const pageInput = document.getElementById('pageInput');
+    const pageCount = document.getElementById('pageCount');
+    const zoomLabel = document.getElementById('zoomLabel');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let pdfDoc = null;
+    let pageNum = 1;
+    let zoomFactor = 1.7;
+    let renderTask = null;
+    let renderSequence = 0;
+
+    function updateButtons(){
+      prevBtn.disabled = !pdfDoc || pageNum <= 1;
+      nextBtn.disabled = !pdfDoc || pageNum >= pdfDoc.numPages;
+      pageInput.value = pageNum;
+      zoomLabel.textContent = `${Math.round(zoomFactor*100)}%`;
+    }
+
+    async function renderPage(resetScroll=true){
+      if(!pdfDoc) return;
+      const sequence = ++renderSequence;
+      if(renderTask){ try{ renderTask.cancel(); }catch(_){} }
+      loading.style.display = 'flex';
+      errorBox.style.display = 'none';
+      progress.style.width = '12%';
+      try{
+        const page = await pdfDoc.getPage(pageNum);
+        if(sequence !== renderSequence) return;
+        const base = page.getViewport({scale:1});
+        const available = Math.max(300, viewer.clientWidth - 22);
+        const fitScale = available / base.width;
+        const cssScale = fitScale * zoomFactor;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const viewport = page.getViewport({scale:cssScale*dpr});
+        const cssWidth = Math.floor(viewport.width/dpr);
+        const cssHeight = Math.floor(viewport.height/dpr);
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        canvas.style.width = `${cssWidth}px`;
+        canvas.style.height = `${cssHeight}px`;
+        progress.style.width = '45%';
+        renderTask = page.render({canvasContext:ctx, viewport});
+        await renderTask.promise;
+        if(sequence !== renderSequence) return;
+        pageInput.value = pageNum;
+        pageCount.textContent = pdfDoc.numPages;
+        updateButtons();
+        progress.style.width = '100%';
+        if(resetScroll){ viewer.scrollTo({top:0,left:0,behavior:'instant'}); }
+        loading.style.display = 'none';
+        setTimeout(()=>progress.style.width='0',350);
+      }catch(err){
+        if(err?.name === 'RenderingCancelledException') return;
+        console.error(err);
+        loading.style.display = 'none';
+        errorBox.style.display = 'flex';
+        progress.style.width = '0';
+      }
+    }
+
+    function goToPage(n){
+      if(!pdfDoc) return;
+      const next = Math.max(1, Math.min(pdfDoc.numPages, Number(n)||1));
+      if(next !== pageNum){ pageNum = next; renderPage(true); }
+      else updateButtons();
+    }
+
+    prevBtn.addEventListener('click',()=>goToPage(pageNum-1));
+    nextBtn.addEventListener('click',()=>goToPage(pageNum+1));
+    pageInput.addEventListener('change',()=>goToPage(pageInput.value));
+    pageInput.addEventListener('keydown',e=>{if(e.key==='Enter'){pageInput.blur();goToPage(pageInput.value)}});
+    document.getElementById('zoomIn').addEventListener('click',()=>{zoomFactor=Math.min(3,zoomFactor+.2);renderPage(false)});
+    document.getElementById('zoomOut').addEventListener('click',()=>{zoomFactor=Math.max(.8,zoomFactor-.2);renderPage(false)});
+    document.getElementById('fitBtn').addEventListener('click',()=>{zoomFactor=1;renderPage(true)});
+    window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')goToPage(pageNum-1);if(e.key==='ArrowRight')goToPage(pageNum+1)});
+    let resizeTimer;
+    window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>renderPage(false),180)});
+
+    try{
+      const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+      const task = pdfjsLib.getDocument({url:selected.url});
+      task.onProgress = data=>{if(data.total){progress.style.width=`${Math.min(40,(data.loaded/data.total)*40)}%`}};
+      pdfDoc = await task.promise;
+      pageCount.textContent = pdfDoc.numPages;
+      updateButtons();
+      await renderPage(true);
+    }catch(err){
+      console.error(err);
+      loading.style.display = 'none';
+      errorBox.style.display = 'flex';
+      progress.style.width = '0';
+    }
+  </script>
+</body>
+</html>
