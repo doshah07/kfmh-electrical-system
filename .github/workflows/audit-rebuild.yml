@@ -2,7 +2,7 @@ name: Audit electrical rebuild
 
 on:
   push:
-    branches: [rebuild-review]
+    branches: [main, rebuild-review]
   pull_request:
     branches: [main]
   workflow_dispatch:
