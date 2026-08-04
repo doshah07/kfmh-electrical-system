@@ -4,26 +4,23 @@
   const isArabic = () => (document.documentElement.lang || 'ar').startsWith('ar');
   const tr = (ar, en) => isArabic() ? ar : en;
   const text = value => value ? (isArabic() ? value.ar : value.en) : '';
-  const esc = (value='') => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const esc = (value='') => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const current = () => (location.hash || '#/home').replace(/^#\//, '').split('?')[0].split('/')[0];
-
-  function generatorStatus(item) {
-    if (item.status === 'confirmed') return `<span class="tag ok">${tr('معتمد','Confirmed')}</span>`;
-    return `<span class="tag partial">${tr('جزئي','Partial')}</span>`;
-  }
+  const shown = value => value === null || value === undefined || value === '' ? '—' : esc(value);
 
   function renderGenerators(root, data) {
-    const items = data.items;
+    const items = Array.isArray(data.items) ? data.items : [];
     root.classList.add('support-rendered');
+    root.dataset.supportRoute = 'generators';
     root.innerHTML = `
       <div class="breadcrumbs"><a href="#/home">${tr('الرئيسية','Home')}</a> / <span>${esc(text(data.title))}</span></div>
       <div class="page-head">
         <div><h1>${esc(text(data.title))}</h1><p>${esc(text(data.scopeNote))}</p></div>
       </div>
       <div class="support-summary">
-        <div class="card"><strong>3</strong><span>${tr('مولدات مسجلة','Registered Generators')}</span></div>
+        <div class="card"><strong>${items.length}</strong><span>${tr('إجمالي المولدات','Total Generators')}</span></div>
         <div class="card"><strong>2 × 1250</strong><span>kVA — GEN-1 / GEN-2</span></div>
-        <div class="card"><strong>TR2 / TR3</strong><span>${tr('ربط المولدين 1 و2','GEN-1 & GEN-2 Association')}</span></div>
+        <div class="card"><strong>TR2 / TR3</strong><span>${tr('ارتباط المولدين 1 و2','GEN-1 & GEN-2 Association')}</span></div>
         <div class="card"><strong>TR4</strong><span>${tr('المولد 3','Generator 3')}</span></div>
       </div>
       <section class="card">
@@ -36,17 +33,27 @@
           <div class="unit">GEN-1<br><small>KOHLER — 1250 kVA</small></div>
         </div>
       </section>
+      <section class="card" style="margin-top:16px">
+        <h2>${tr('سجل المولدات الكامل','Complete Generator Register')}</h2>
+        <div class="table-wrap"><table class="support-table">
+          <thead><tr>
+            <th>${tr('الرقم','No.')}</th><th>${tr('منطقة المولد','Generator Area')}</th><th>${tr('المنطقة المخدومة','Area Served')}</th><th>${tr('الشركة','Manufacturer')}</th><th>${tr('الموديل','Model')}</th><th>${tr('الرقم التسلسلي','Serial Number')}</th><th>kW</th><th>kVA</th><th>V</th><th>${tr('سنة التركيب','Install Year')}</th><th>${tr('الحالة','Condition')}</th><th>${tr('الأهمية','Performance Level')}</th>
+          </tr></thead>
+          <tbody>${items.map(item => `
+            <tr>
+              <td><b>${item.number}</b></td><td>${shown(item.area)}</td><td>${shown(item.servedArea)}</td><td>${shown(item.manufacturer)}</td><td>${shown(item.model)}</td><td dir="ltr">${shown(item.serialNumber)}</td><td>${shown(item.kw)}</td><td>${shown(item.kva)}</td><td>${shown(item.voltage)}</td><td>${shown(item.installYear)}</td><td>${shown(item.condition)}</td><td>${shown(item.performanceLevel)}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>
+      </section>
       <div class="generator-grid">
-        ${items.map(item => `
+        ${items.filter(item => item.explanation).map(item => `
           <article class="card generator-card">
-            <div class="generator-icon">${esc(item.id.replace('GEN-','G'))}</div>
-            <div class="status-line"><h2>${esc(text(item.name))}</h2>${generatorStatus(item)}</div>
+            <div class="generator-icon">G${item.number}</div>
+            <div class="status-line"><h2>${tr('المولد','Generator')} ${item.number}</h2><span class="tag ok">${tr('شرح معتمد','Confirmed Note')}</span></div>
             <div class="kv">
-              <div class="key">ID</div><div>${esc(item.id)}</div>
-              <div class="key">${tr('الشركة','Manufacturer')}</div><div>${esc(item.manufacturer || tr('قيد التوثيق','Pending'))}</div>
-              <div class="key">${tr('القدرة','Rating')}</div><div>${item.ratingKva ? `${item.ratingKva} kVA` : tr('قيد التوثيق','Pending')}</div>
-              <div class="key">${tr('الربط','Association')}</div><div>${esc(text(item.association))}</div>
-              <div class="key">${tr('التوصيل','Connection')}</div><div>${esc(text(item.connection))}</div>
+              <div class="key">${tr('الشركة','Manufacturer')}</div><div>${shown(item.manufacturer)}</div>
+              <div class="key">${tr('القدرة','Rating')}</div><div>${shown(item.kva)} kVA</div>
+              <div class="key">${tr('الشرح','Explanation')}</div><div>${esc(text(item.explanation))}</div>
             </div>
           </article>`).join('')}
       </div>
@@ -54,40 +61,33 @@
   }
 
   function renderUps(root, data) {
-    const bank = data.batteryBank;
-    const faulty = new Set(bank.confirmedFaulty);
+    const items = Array.isArray(data.items) ? data.items : [];
+    const summary = data.summary || {};
     root.classList.add('support-rendered');
+    root.dataset.supportRoute = 'ups';
     root.innerHTML = `
       <div class="breadcrumbs"><a href="#/home">${tr('الرئيسية','Home')}</a> / <span>${esc(text(data.title))}</span></div>
       <div class="page-head">
-        <div><h1>${esc(text(data.title))}</h1><p>${tr('سجل بنك البطاريات والحالة المؤكدة لكل رقم.','Battery bank register and confirmed status by battery number.')}</p></div>
+        <div><h1>${esc(text(data.title))}</h1><p>${esc(text(data.note))}</p></div>
       </div>
       <div class="support-summary">
-        <div class="card"><strong>${esc(bank.manufacturer)}</strong><span>${tr('الشركة المصنعة','Manufacturer')}</span></div>
-        <div class="card"><strong>${bank.quantity}</strong><span>${tr('إجمالي البطاريات','Total Batteries')}</span></div>
-        <div class="card"><strong>01–44</strong><span>${tr('نطاق الترقيم','Numbering Range')}</span></div>
-        <div class="card"><strong style="color:#9f1d18">13</strong><span>${tr('بطارية عطلانة','Faulty Battery')}</span></div>
+        <div class="card"><strong>${summary.total || items.length}</strong><span>${tr('إجمالي وحدات UPS','Total UPS Units')}</span></div>
+        <div class="card"><strong>ABB ${summary.byMake?.ABB || 0}</strong><span>${tr('وحدات','Units')}</span></div>
+        <div class="card"><strong>EATON ${summary.byMake?.EATON || 0}</strong><span>${tr('وحدات','Units')}</span></div>
+        <div class="card"><strong style="color:#9f1d18">#13</strong><span>${tr('وحدة عطلانة','Faulty Unit')}</span></div>
       </div>
-      <section class="card battery-bank">
-        <div class="panel-top">
-          <div><h2>${tr('بنك بطاريات SHOTO','SHOTO Battery Bank')}</h2><p>${esc(text(bank.physicalArrangement))}</p></div>
-          <span class="tag partial">${tr('يوجد عطل مسجل','Recorded Fault')}</span>
-        </div>
-        <div class="fault-banner">⚠ ${tr('البطارية رقم 13 عطلانة — يجب إبقاؤها ظاهرة بوضوح في سجل الصيانة والفحص.','Battery 13 is FAULTY — keep it clearly flagged in maintenance and inspection records.')}</div>
-        <div class="battery-grid">
-          ${bank.batteries.map(battery => `
-            <div class="battery-cell ${faulty.has(battery.number) ? 'faulty' : ''}" title="${esc(text(battery.note))}">
-              <strong>#${String(battery.number).padStart(2,'0')}</strong>
-              <small>SHOTO</small>
-              <small>${faulty.has(battery.number) ? tr('عطلان','FAULTY') : tr('مسجل','REGISTERED')}</small>
-            </div>`).join('')}
-        </div>
-        <div class="support-note">${esc(text(bank.note))}</div>
-      </section>
+      <div class="fault-banner">⚠ ${tr('وحدة UPS رقم 13 عطلانة، وتم الاحتفاظ بجميع بياناتها في السجل.','UPS unit 13 is FAULTY, and all of its data remains recorded.')}</div>
       <section class="card" style="margin-top:16px">
-        <h2>${tr('حقول الفحص المطلوبة لاحقًا','Required Future Inspection Fields')}</h2>
-        <div class="table-wrap"><table><thead><tr><th>${tr('رقم البطارية','Battery ID')}</th><th>${tr('الجهد','Voltage')}</th><th>${tr('الحرارة','Temperature')}</th><th>${tr('الحالة','Condition')}</th><th>${tr('التاريخ','Date')}</th></tr></thead><tbody><tr><td>#13</td><td>${tr('يُقاس ميدانيًا','Field measurement')}</td><td>${tr('تُقاس ميدانيًا','Field measurement')}</td><td><b style="color:#9f1d18">${tr('عطلان','FAULTY')}</b></td><td>${tr('يُسجل عند الفحص','Record on inspection')}</td></tr></tbody></table></div>
+        <h2>${tr('سجل وحدات UPS الكامل','Complete UPS Unit Register')}</h2>
+        <div class="table-wrap"><table class="support-table">
+          <thead><tr><th>${tr('الرقم','No.')}</th><th>MAKE</th><th>MODEL</th><th>SR. #</th><th>kVA</th><th>LOCATION</th><th>${tr('الحالة','Status')}</th></tr></thead>
+          <tbody>${items.map(item => `
+            <tr class="${item.status === 'faulty' ? 'faulty-row' : ''}">
+              <td><b>${item.number}</b></td><td>${shown(item.make)}</td><td>${shown(item.model)}</td><td dir="ltr">${shown(item.serialNumber)}</td><td>${shown(item.kva)}</td><td>${shown(item.location)}</td><td>${item.status === 'faulty' ? `<b class="fault-text">${tr('عطلان','FAULTY')}</b>` : tr('مسجل','Registered')}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>
       </section>
+      <div class="support-note">ABB — 4 ${tr('وحدات','units')} &nbsp; | &nbsp; EATON — 10 ${tr('وحدات','units')} &nbsp; | &nbsp; SCHNEIDER — 1 ${tr('وحدة','unit')}</div>
       <div class="project-credit-inline">${tr('إعداد المشروع الفني/ عبدالله عسيري','Technical Project Preparation / Abdullah Asiri')}</div>`;
   }
 
@@ -95,9 +95,17 @@
     queued = false;
     const root = document.querySelector('#content');
     const support = window.KFMH_SUPPORT_DATA;
-    if (!root || !support || root.classList.contains('support-rendered')) return;
-    if (current() === 'generators') renderGenerators(root, support.generators);
-    if (current() === 'ups') renderUps(root, support.ups);
+    const route = current();
+    if (!root || !support) return;
+
+    if (route !== 'generators' && route !== 'ups') {
+      root.classList.remove('support-rendered');
+      delete root.dataset.supportRoute;
+      return;
+    }
+    if (root.dataset.supportRoute === route) return;
+    if (route === 'generators') renderGenerators(root, support.generators);
+    if (route === 'ups') renderUps(root, support.ups);
   }
 
   function schedule() {
@@ -106,7 +114,7 @@
     requestAnimationFrame(enhance);
   }
 
-  new MutationObserver(schedule).observe(document.documentElement, { childList:true, subtree:true });
+  new MutationObserver(schedule).observe(document.body, { childList:true, subtree:true });
   window.addEventListener('hashchange', schedule);
   window.addEventListener('DOMContentLoaded', schedule);
   schedule();
