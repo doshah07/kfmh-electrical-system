@@ -9,7 +9,7 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#dfe6ee;font-family:Tahoma,Arial,sans-serif}button{font:inherit}
 #stage{position:fixed;inset:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#dfe6ee;direction:ltr}
 #wrap{position:relative;margin:0 auto}#canvas{position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;background:#fff;box-shadow:0 12px 40px rgba(0,29,62,.24);direction:ltr;overflow:hidden}
-#reference{position:absolute;inset:0;width:1536px;height:1024px;object-fit:cover;display:block;z-index:1}.mask{position:absolute;z-index:2;pointer-events:none}.mask.navy{background:#082f5c}.mask.gold{background:#b28b3b}.mask.white{background:#fff}
+#reference{position:absolute;inset:0;width:1536px;height:1024px;object-fit:cover;image-rendering:auto;display:block;z-index:1}.mask{position:absolute;z-index:2;pointer-events:none}.mask.navy{background:#082f5c}.mask.gold{background:#b28b3b}.mask.white{background:#fff}
 .credit-first{position:absolute;z-index:3;left:508px;top:790px;width:520px;height:24px;background:#fff;display:flex;align-items:center;justify-content:center;color:#0b315b;font-size:13px;font-weight:700;direction:rtl}
 .hot{position:absolute;z-index:5;border:0;background:transparent;padding:0;cursor:pointer;border-radius:7px}.hot:focus-visible{outline:3px solid #f2c761;outline-offset:-3px}
 #toast{position:fixed;z-index:30;left:50%;bottom:22px;transform:translateX(-50%);background:#062d5b;color:#fff;border:1px solid #d5aa47;border-radius:10px;padding:11px 18px;display:none;box-shadow:0 9px 30px rgba(0,0,0,.22);white-space:nowrap;direction:rtl}#toast.show{display:block}
@@ -53,10 +53,10 @@
   <button class="hot" id="zoomOut" aria-label="تصغير" style="left:1078px;top:109px;width:39px;height:35px"></button>
   <button class="hot" id="zoomIn" aria-label="تكبير" style="left:1176px;top:109px;width:39px;height:35px"></button>
 </div></div></div><div id="toast"></div>
-<script src="exact-img-1.js"></script><script src="exact-img-2.js"></script><script src="exact-img-3.js"></script><script src="exact-img-4.js"></script><script src="exact-img-5.js"></script>
+<script src="exact-tiny.js"></script>
 <script>
 const stage=document.getElementById('stage'),wrap=document.getElementById('wrap'),canvas=document.getElementById('canvas'),toast=document.getElementById('toast'),overlay=document.getElementById('pageOverlay');
-document.getElementById('reference').src='data:image/webp;base64,'+(window.__exactImageChunks||[]).join('');let scale=1;const order=['home','index','diagram','tr1','tr2','tr3','tr4','tr5','generators','ups','search','approval'];let current=0;
+document.getElementById('reference').src='data:image/webp;base64,'+window.__exactTiny;let scale=1;const order=['home','index','diagram','tr1','tr2','tr3','tr4','tr5','generators','ups','search','approval'];let current=0;
 const labels={home:'الصفحة الرئيسية',index:'الفهرس',diagram:'المخطط العام لتوزيع الكهرباء',tr1:'المحول رقم 1 (TR1)',tr2:'المحول رقم 2 (TR2)',tr3:'المحول رقم 3 (TR3)',tr4:'المحول رقم 4 (TR4)',tr5:'المحول رقم 5 (TR5)',generators:'مولدات المستشفى',ups:'أنظمة UPS والبطاريات',search:'البحث في المشروع',approval:'الاعتماد والتوثيق'};
 function layout(){wrap.style.width=(1536*scale)+'px';wrap.style.height=(1024*scale)+'px';canvas.style.transform='scale('+scale+')'}function fit(){scale=Math.min(1,innerWidth/1536);layout()}function show(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(show.t);show.t=setTimeout(()=>toast.classList.remove('show'),1600)}
 function openPage(name){current=Math.max(0,order.indexOf(name));if(name==='home'){overlay.classList.remove('show');return}overlay.classList.add('show');overlayHead.textContent=labels[name];overlayTitle.textContent=labels[name];overlayText.textContent=name==='approval'?'هذه الصفحة الأخيرة في النظام.':'تم تجهيز موضع هذا القسم داخل نفس الواجهة المعتمدة، وسيتم ربط بياناته التفصيلية دون تغيير شكل التصميم.';overlayCredit.style.display=name==='approval'?'block':'none';show(labels[name])}
