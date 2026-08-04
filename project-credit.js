@@ -1,12 +1,18 @@
 (() => {
   const CREDIT_AR = 'إعداد المشروع الفني/ عبدالله عسيري';
   const CREDIT_EN = 'Technical Project Preparation / Abdullah Asiri';
+  let scheduled = false;
 
   function isArabic() {
     return (document.documentElement.lang || 'ar').toLowerCase().startsWith('ar');
   }
 
+  function setText(element, text) {
+    if (element && element.textContent !== text) element.textContent = text;
+  }
+
   function applyCredit() {
+    scheduled = false;
     const text = isArabic() ? CREDIT_AR : CREDIT_EN;
 
     const footer = document.querySelector('.footer');
@@ -17,7 +23,7 @@
         credit.className = 'project-credit';
         footer.appendChild(credit);
       }
-      credit.textContent = text;
+      setText(credit, text);
     }
 
     const sidebarFooter = document.querySelector('.sidebar-footer');
@@ -28,19 +34,23 @@
         credit.className = 'project-credit';
         sidebarFooter.appendChild(credit);
       }
-      credit.textContent = text;
+      setText(credit, text);
     }
 
     const page = document.querySelector('.document-page, .viewer-page, .page-canvas, #content');
-    if (page && !document.querySelector('.project-credit-badge')) {
-      const badge = document.createElement('div');
+    let badge = document.querySelector('.project-credit-badge');
+    if (page && !badge) {
+      badge = document.createElement('div');
       badge.className = 'project-credit-badge no-print';
-      badge.textContent = text;
       document.body.appendChild(badge);
-    } else {
-      const badge = document.querySelector('.project-credit-badge');
-      if (badge) badge.textContent = text;
     }
+    if (badge) setText(badge, text);
+  }
+
+  function scheduleApply() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(applyCredit);
   }
 
   const style = document.createElement('style');
@@ -53,8 +63,8 @@
   `;
   document.head.appendChild(style);
 
-  new MutationObserver(applyCredit).observe(document.documentElement, {childList:true, subtree:true});
-  window.addEventListener('hashchange', applyCredit);
-  window.addEventListener('DOMContentLoaded', applyCredit);
-  applyCredit();
+  new MutationObserver(scheduleApply).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('hashchange', scheduleApply);
+  window.addEventListener('DOMContentLoaded', scheduleApply);
+  scheduleApply();
 })();
