@@ -1,0 +1,39 @@
+name: Set default zoom to 45 percent
+
+on:
+  push:
+    paths:
+      - '.github/workflows/set-default-45.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set default zoom and home position
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          replacements = {
+              'let z=.5,x=0,y=0,drag=false': 'let z=.45,x=0,y=0,drag=false',
+              'function reset(){fitAll()}': "function reset(){z=.45;x=(innerWidth-W*z)/2;y=(innerHeight-H*z)/2;draw()}",
+              "addEventListener('load',()=>{const saved=parseFloat(localStorage.getItem('kfmhZoom'));if(saved&&saved>=MIN&&saved<=MAX){z=saved;x=(innerWidth-W*z)/2;y=(innerHeight-H*z)/2;draw()}else fitAll()})": "addEventListener('load',()=>{z=.45;x=(innerWidth-W*z)/2;y=(innerHeight-H*z)/2;draw()})"
+          }
+          for old, new in replacements.items():
+              if old not in s:
+                  raise SystemExit(f'Missing expected text: {old}')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Set default website zoom to 45 percent'
+          git push
