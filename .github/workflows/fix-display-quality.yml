@@ -1,0 +1,71 @@
+name: Fix display quality and PP visibility
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-display-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-display:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Improve rendering and show full power path
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          s = s.replace(
+            '*{box-sizing:border-box}html,body{',
+            '*{box-sizing:border-box}html{-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}html,body{'
+          )
+          s = s.replace(
+            '.stage{position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;will-change:transform}',
+            '.stage{position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}'
+          )
+          s = s.replace(
+            '.flow{display:flex;align-items:center;gap:8px;direction:ltr;padding:14px 4px}',
+            '.flow{display:flex;align-items:center;justify-content:space-between;gap:6px;direction:ltr;padding:14px 2px;overflow:visible}'
+          )
+          s = s.replace(
+            '.eq{width:160px;min-width:160px;height:228px;',
+            '.eq{width:142px;min-width:142px;height:224px;'
+          )
+          s = s.replace(
+            '.eq img{width:100%;height:135px;object-fit:contain}',
+            '.eq img{width:100%;height:128px;object-fit:contain;image-rendering:auto}'
+          )
+          s = s.replace(
+            '.arrow{font-size:30px;',
+            '.arrow{font-size:25px;flex:0 0 auto;'
+          )
+          s = s.replace(
+            'stage.style.transform=`translate3d(${x}px,${y}px,0) scale(${z})`;',
+            'stage.style.transform=`translate(${Math.round(x)}px,${Math.round(y)}px) scale(${z})`;'
+          )
+
+          # Keep the opening view at 45%, centered horizontally and near the top.
+          s = s.replace(
+            "let z=.5,x=0,y=0,drag=false",
+            "let z=.45,x=0,y=0,drag=false"
+          )
+          s = s.replace(
+            "addEventListener('load',()=>{const saved=parseFloat(localStorage.getItem('kfmhZoom'));if(saved&&saved>=MIN&&saved<=MAX){z=saved;x=(innerWidth-W*z)/2;y=(innerHeight-H*z)/2;draw()}else fitAll()});",
+            "addEventListener('load',()=>{z=.45;x=(innerWidth-W*z)/2;y=18;draw()});"
+          )
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Improve dashboard clarity and restore PP visibility" || exit 0
+          git push
