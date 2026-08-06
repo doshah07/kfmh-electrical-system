@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1536">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>نظام إدارة توزيع الطاقة الكهربائية</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#061b31;width:1536px;min-height:864px;overflow-x:auto;font-family:Tahoma,Arial,sans-serif}
+#p{position:relative;width:1536px;height:864px}
+#p img{display:block;width:1536px;height:864px;user-select:none;-webkit-user-drag:none}
+button.h{position:absolute;border:0;background:transparent;border-radius:12px;cursor:pointer}
+button.h:hover,button.h:focus-visible{outline:4px solid #e9a52c;background:#e9a52c22}
+#loading{position:absolute;inset:0;display:grid;place-items:center;color:#e9a52c;background:#061b31;font-size:24px}
+#m{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#001326cc;z-index:9}
+#m.o{display:flex}
+.b{width:760px;max-height:700px;overflow:auto;background:#fff;border:3px solid #e9a52c;border-radius:18px;color:#0a2c4e}
+.t{display:flex;justify-content:space-between;align-items:center;padding:17px 20px;background:#062743;color:#fff;border-bottom:3px solid #e9a52c}
+.t h2{margin:0;font-size:28px}
+.x{border:0;background:transparent;color:#fff;font-size:34px}
+.c{padding:22px;font-size:20px;line-height:1.9}
+.path{direction:ltr;text-align:center;background:#f3f6f9;border:1px solid #c9d5e1;border-radius:12px;padding:18px;font-weight:900}
+</style>
+</head>
+<body>
+<main id="p">
+<div id="loading">جاري تحميل النظام…</div>
+<img id="master" alt="لوحة التحكم">
+<button class="h" data-s="home" style="left:17px;top:66px;width:226px;height:52px"></button>
+<button class="h" data-s="transformers" style="left:17px;top:124px;width:226px;height:52px"></button>
+<button class="h" data-s="generators" style="left:17px;top:182px;width:226px;height:52px"></button>
+<button class="h" data-s="batteries" style="left:17px;top:240px;width:226px;height:52px"></button>
+<button class="h" data-s="mdp" style="left:17px;top:298px;width:226px;height:52px"></button>
+<button class="h" data-s="mp" style="left:17px;top:356px;width:226px;height:52px"></button>
+<button class="h" data-s="pp" style="left:17px;top:414px;width:226px;height:52px"></button>
+<button class="h" data-s="label" style="left:17px;top:472px;width:226px;height:52px"></button>
+<button class="h" data-s="browser" style="left:45px;top:575px;width:190px;height:42px"></button>
+<button class="h" data-s="login" style="left:45px;top:625px;width:190px;height:42px"></button>
+<button class="h" data-s="about" style="left:17px;top:668px;width:226px;height:52px"></button>
+<button class="h" data-tr="TR1" style="left:294px;top:626px;width:216px;height:223px"></button>
+<button class="h" data-tr="TR2" style="left:533px;top:626px;width:216px;height:223px"></button>
+<button class="h" data-tr="TR3" style="left:772px;top:626px;width:216px;height:223px"></button>
+<button class="h" data-tr="TR4" style="left:1010px;top:626px;width:216px;height:223px"></button>
+<button class="h" data-tr="TR5" style="left:1249px;top:626px;width:216px;height:223px"></button>
+</main>
+<section id="m"><div class="b"><div class="t"><h2 id="mt">التفاصيل</h2><button id="mx" class="x">×</button></div><div id="mc" class="c"></div></div></section>
+<script>
+(async()=>{
+  const parts=await Promise.all([...Array(6)].map((_,i)=>fetch(`assets/av${i}.txt?v=1`).then(r=>{if(!r.ok)throw new Error(i);return r.text()})));
+  const img=document.getElementById('master');
+  img.onload=()=>document.getElementById('loading').remove();
+  img.src='data:image/avif;base64,'+parts.join('');
+})().catch(()=>document.getElementById('loading').textContent='تعذر تحميل الصفحة');
+const P={TR1:'RMU (OS) → TR1 → MDP1 → MP1 / MP5 / MP4 / MP3 → PP1',TR2:'RMU1 → TR2 → FED2 → ATS4 → MDP2 → MP1…MP8 → PP',TR3:'RMU1 → TR3 → FED3 → ATS5 → MDP3 → MP1…MP14 → PP',TR4:'RMU (OS) → TR4 → ATS3 → MDP4 → MP1…MP5 → PP',TR5:'RMU (OS) → TR5 → ATS3 (Manual) → MDP5 → MP1…MP6 → PP'};
+const N={transformers:'المحولات',generators:'المولدات',batteries:'البطاريات',mdp:'لوحات التوزيع الرئيسية MDP',mp:'لوحات التشغيل الرئيسية MP',pp:'لوحات التوزيع الفرعية PP',label:'الملصق الخارجي',browser:'إعدادات المتصفح',login:'تسجيل الدخول',about:'حول المشروع'};
+const m=document.getElementById('m'),mt=document.getElementById('mt'),mc=document.getElementById('mc');
+function o(t,c){mt.textContent=t;mc.innerHTML=c;m.classList.add('o')}
+function q(){m.classList.remove('o')}
+document.getElementById('mx').onclick=q;
+m.onclick=e=>{if(e.target===m)q()};
+document.querySelectorAll('[data-tr]').forEach(b=>b.onclick=()=>o('تفاصيل المحول '+b.dataset.tr,'<div class="path">'+P[b.dataset.tr]+'</div>'));
+document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{
+ let s=b.dataset.s;if(s==='home')return;
+ o(N[s]||'القسم','<div>'+((s==='login')?'اسم المستخدم<br><input style="width:100%;padding:12px"><br><br>كلمة المرور<br><input type="password" style="width:100%;padding:12px">':'سيتم فتح هذا القسم داخل نفس واجهة النظام.')+'</div>')
+});
+</script></body></html>
