@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=.1,maximum-scale=5,user-scalable=no,viewport-fit=cover">
+<title>نظام إدارة توزيع الطاقة الكهربائية</title>
+<style>
+:root{--navy:#082b50;--navy2:#061f3a;--gold:#eda91f}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#dfe6ee;font-family:Tahoma,Arial,sans-serif}
+#vp{position:fixed;inset:0;overflow:hidden;touch-action:none;cursor:grab;background:#e8edf3}#vp.drag{cursor:grabbing}
+#stage{position:absolute;left:0;top:0;width:1806px;height:1024px;display:flex;direction:ltr;transform-origin:0 0;will-change:transform;user-select:none}
+.sidebar{width:270px;height:1024px;flex:0 0 270px;background:linear-gradient(180deg,var(--navy2),var(--navy));color:#fff;border-right:3px solid var(--gold);display:flex;flex-direction:column;direction:rtl}
+.brand{padding:22px 16px 16px;text-align:center;border-bottom:1px solid rgba(237,169,31,.45)}
+.logo{width:96px;height:96px;margin:0 auto 12px;border:3px solid var(--gold);border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--navy);font-weight:900;font-size:20px}
+.brand .ar{font-size:20px;font-weight:900;line-height:1.5}.brand .en{font-size:11px;color:#ffc44d;font-weight:800;margin-top:5px}
+.title{padding:18px 18px 9px;font-size:23px;font-weight:900}.title:after{content:"";display:block;height:3px;background:var(--gold);margin-top:8px}
+.nav{padding:0 12px 16px;overflow:auto}.nav button{width:100%;border:1px solid var(--gold);background:#0b3a67;color:#fff;border-radius:12px;padding:12px;margin:5px 0;text-align:right;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px}.nav button.active,.nav button:hover{background:var(--gold);color:#071d35}
+.label{font-weight:900;font-size:15px}.en{display:block;font-size:9px;font-weight:800;color:#ffc44d;margin-top:3px}.nav button.active .en,.nav button:hover .en{color:#071d35}.icon{font-size:18px}
+.credit{margin-top:auto;padding:14px;text-align:center;border-top:1px solid rgba(237,169,31,.55)}.credit .ar{font-size:13px}.credit .en{font-size:10px;color:#ffc44d;margin-top:4px}
+.home{width:1536px;height:1024px;flex:0 0 1536px;background:#fff;overflow:hidden}.home img{display:block;width:1536px;height:1024px;object-fit:contain;pointer-events:none}
+.controls{position:fixed;right:10px;bottom:10px;z-index:30;display:flex;gap:5px;direction:ltr;background:rgba(6,31,58,.94);padding:6px;border:1px solid var(--gold);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.controls button{width:38px;height:34px;border:0;border-radius:8px;background:#0d477c;color:#fff;font-size:16px;font-weight:900}.controls span{min-width:55px;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#e8edf3;color:var(--navy);font-size:18px;font-weight:900;z-index:50}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(1,14,28,.72);z-index:100}.modal.open{display:grid}.box{width:min(720px,92vw);background:#fff;border:3px solid var(--gold);border-radius:16px;overflow:hidden}.head{background:var(--navy);color:#fff;padding:15px 18px;display:flex;justify-content:space-between;align-items:center}.body{padding:20px}.path{direction:ltr;text-align:center;background:#f3f6fa;border:1px solid #cad5e1;border-radius:12px;padding:18px;font-size:20px;font-weight:900;line-height:1.8;color:#092c51}.close{border:0;background:transparent;color:#fff;font-size:28px}
+@media(max-width:700px){.controls{transform:scale(.9);transform-origin:bottom right}}
+</style>
+</head>
+<body>
+<div id="loading">جاري تحميل الصفحة الرئيسية...</div>
+<div id="vp"><div id="stage">
+<aside class="sidebar">
+<div class="brand"><div class="logo">KFMH</div><div class="ar">مستشفى الملك فيصل العسكري</div><div class="en">KING FAISAL MILITARY HOSPITAL</div></div>
+<div class="title">القائمة الرئيسية</div>
+<nav class="nav">
+<button class="active" data-name="الرئيسية"><span><span class="label">الرئيسية</span><span class="en">HOME</span></span><span class="icon">⌂</span></button>
+<button data-name="المحولات"><span><span class="label">المحولات</span><span class="en">TRANSFORMERS</span></span><span class="icon">⚡</span></button>
+<button data-name="المولدات"><span><span class="label">المولدات</span><span class="en">GENERATORS</span></span><span class="icon">◉</span></button>
+<button data-name="البطاريات"><span><span class="label">البطاريات</span><span class="en">BATTERIES</span></span><span class="icon">▣</span></button>
+<button data-name="لوحات التوزيع الرئيسية MDP"><span><span class="label">لوحات التوزيع الرئيسية</span><span class="en">MDP</span></span><span class="icon">▤</span></button>
+<button data-name="لوحات التشغيل الرئيسية MP"><span><span class="label">لوحات التشغيل الرئيسية</span><span class="en">MP</span></span><span class="icon">▥</span></button>
+<button data-name="لوحات التوزيع الفرعية PP"><span><span class="label">لوحات التوزيع الفرعية</span><span class="en">PP</span></span><span class="icon">▦</span></button>
+<button data-name="الملصق الخارجي"><span><span class="label">الملصق الخارجي</span><span class="en">EXTERNAL LABEL</span></span><span class="icon">🏷</span></button>
+<button data-name="إعدادات المتصفح وتسجيل الدخول"><span><span class="label">الإعدادات</span><span class="en">SETTINGS & LOGIN</span></span><span class="icon">⚙</span></button>
+<button data-name="حول المشروع"><span><span class="label">حول المشروع</span><span class="en">ABOUT PROJECT</span></span><span class="icon">ⓘ</span></button>
+</nav>
+<div class="credit"><div class="ar">إعداد الفني / عبدالله عسيري</div><div class="en">Prepared by Technician / Abdullah Asiri</div></div>
+</aside>
+<main class="home"><img id="master" alt="الصفحة الرئيسية"></main>
+</div></div>
+<div class="controls"><button id="minus">−</button><span id="zv">100%</span><button id="plus">+</button><button id="natural">100</button><button id="fit">↔</button></div>
+<div class="modal" id="modal"><div class="box"><div class="head"><strong id="mtitle">التفاصيل</strong><button class="close" id="close">×</button></div><div class="body" id="body"></div></div></div>
+<script>
+(()=>{
+const W=1806,H=1024,MIN=.12,MAX=3;
+const vp=document.getElementById('vp'),stage=document.getElementById('stage'),zv=document.getElementById('zv'),master=document.getElementById('master'),loading=document.getElementById('loading');
+let z=1,x=0,y=0,mode='fit',drag=false,sx=0,sy=0,bx=0,by=0,lastTap=0;const points=new Map();let pinch=null;
+function dims(){const v=window.visualViewport;return {w:Math.max(240,v?v.width:innerWidth),h:Math.max(240,v?v.height:innerHeight)}}
+function clamp(){const {w,h}=dims(),sw=W*z,sh=H*z,p=4;if(sw<=w)x=(w-sw)/2;else x=Math.max(w-sw-p,Math.min(p,x));if(sh<=h)y=(h-sh)/2;else y=Math.max(h-sh-p,Math.min(p,y))}
+function draw(){clamp();stage.style.transform=`translate(${Math.round(x)}px,${Math.round(y)}px) scale(${z})`;zv.textContent=Math.round(z*100)+'%'}
+function fitView(){const {w,h}=dims();z=Math.min((w-8)/W,(h-8)/H);z=Math.max(MIN,Math.min(1,z));x=(w-W*z)/2;y=(h-H*z)/2;mode='fit';draw()}
+function natural(){const {w,h}=dims();z=1;x=(w-W)/2;y=(h-H)/2;mode='manual';draw()}
+function zoomAt(n,cx,cy){const {w,h}=dims();cx??=w/2;cy??=h/2;n=Math.max(MIN,Math.min(MAX,n));const wx=(cx-x)/z,wy=(cy-y)/z;x=cx-wx*n;y=cy-wy*n;z=n;mode='manual';draw()}
+function init(){const {w}=dims();if(w<900)fitView();else natural();loading.style.display='none'}
+fetch('assets/dashboard-master-v2.b64?v=20260806-2244').then(r=>r.text()).then(t=>{master.src='data:image/png;base64,'+t.trim();master.onload=init}).catch(()=>{loading.textContent='تعذر تحميل الصورة'});
+minus.onclick=()=>zoomAt(z/1.15);plus.onclick=()=>zoomAt(z*1.15);natural.onclick=natural;fit.onclick=fitView;
+vp.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;vp.setPointerCapture(e.pointerId);points.set(e.pointerId,{x:e.clientX,y:e.clientY});if(points.size===1){drag=true;sx=e.clientX;sy=e.clientY;bx=x;by=y;vp.classList.add('drag')}else if(points.size===2){const a=[...points.values()],dx=a[0].x-a[1].x,dy=a[0].y-a[1].y;pinch={d:Math.hypot(dx,dy),z}}});
+vp.addEventListener('pointermove',e=>{if(!points.has(e.pointerId))return;points.set(e.pointerId,{x:e.clientX,y:e.clientY});if(points.size===1&&drag){const a=[...points.values()][0];x=bx+a.x-sx;y=by+a.y-sy;mode='manual';draw()}else if(points.size===2&&pinch){const a=[...points.values()],dx=a[0].x-a[1].x,dy=a[0].y-a[1].y,mx=(a[0].x+a[1].x)/2,my=(a[0].y+a[1].y)/2;zoomAt(pinch.z*Math.hypot(dx,dy)/pinch.d,mx,my)}});
+function up(e){points.delete(e.pointerId);if(points.size===0){drag=false;pinch=null;vp.classList.remove('drag')}}vp.addEventListener('pointerup',up);vp.addEventListener('pointercancel',up);
+vp.addEventListener('wheel',e=>{e.preventDefault();zoomAt(z*(e.deltaY<0?1.1:.9),e.clientX,e.clientY)},{passive:false});
+vp.addEventListener('dblclick',e=>{e.preventDefault();if(z>.95)fitView();else zoomAt(1,e.clientX,e.clientY)});
+function refit(){if(mode==='fit')fitView()}addEventListener('resize',()=>setTimeout(refit,60));if(window.visualViewport){visualViewport.addEventListener('resize',()=>setTimeout(refit,60));visualViewport.addEventListener('scroll',()=>setTimeout(refit,60))}
+setTimeout(()=>{if(loading.style.display!=='none')fitView()},300);setTimeout(refit,900);
+const paths={TR1:'RMU (OS) → TR1 → MDP1 → MP1 / MP5 / MP4 / MP3 → PP1',TR2:'RMU1 → TR2 → FED2 → ATS4 → MDP2 → MP1…MP8 → PP',TR3:'RMU1 → TR3 → FED3 → ATS5 → MDP3 → MP1…MP14 → PP',TR4:'RMU (OS) → TR4 → ATS3 → MDP4 → MP1…MP5 → PP',TR5:'RMU (OS) → TR5 → ATS3 (Manual) → MDP5 → MP1…MP6 → PP'};
+const modal=document.getElementById('modal'),mtitle=document.getElementById('mtitle'),body=document.getElementById('body');function open(t,b){mtitle.textContent=t;body.innerHTML=b;modal.classList.add('open')}close.onclick=()=>modal.classList.remove('open');modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(q=>q.classList.remove('active'));b.classList.add('active');if(b.dataset.name==='الرئيسية'){fitView();return}if(b.dataset.name==='المحولات'){open('المحولات',Object.entries(paths).map(([k,v])=>`<div class="path" style="margin-bottom:10px"><b>${k}</b><br>${v}</div>`).join(''));return}open(b.dataset.name,`<div class="path">${b.dataset.name}</div>`)});
+})();
+</script>
+</body>
+</html>
